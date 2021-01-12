@@ -46,12 +46,15 @@ class App extends Component {
     super(props);
 
     this.state = {
-      result: null,
+      results: null,
+      searchKey:'',
       //list, //not using dummy data list anymore
       searchTerm: DEFAULT_QUERY,
-      helloWorld: 'Welcome to the Road to learn React'
+      helloWorld: 'Welcome to the Road to learn React',
+      error: null
     };
 
+    this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
     this.searchTopStories = this.setSearchTopStories.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
@@ -59,11 +62,23 @@ class App extends Component {
     this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
   }
 
+  needsToSearchTopStories(searchTerm){
+    return !this.state.results[searchTerm];
+  }
+
   onSearchSubmit(event){
     const {
       searchTerm
     } = this.state;
-    this.fetchSearchTopStories(searchTerm);
+    this.setState(
+      {
+        searchKey: searchTerm
+      }
+    )
+    
+    if(this.needsToSearchTopStories(searchTerm)){
+      this.fetchSearchTopStories(searchTerm);
+    }
     event.preventDefault();
   }
 
@@ -73,6 +88,9 @@ class App extends Component {
       hits, 
       page
     } = result;
+    const{
+      searchKey, results
+    } = this.state;
 
     const oldHits = page !==0 ? this.state.result.hits : [];
     const updateHits = [
@@ -80,22 +98,28 @@ class App extends Component {
     ]
 
     this.setState({
-        result:{
-          hits: updateHits,
-          page
+        results:{
+         ...results, [searchKey]: {hits: updateHits,page}
         }
     });
   } 
 
   fetchSearchTopStories(searchTerm, page = 0){
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`)
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
     .then(response => response.json())
     .then(result => this.searchTopStories(result))
-    .catch(error => error);
+    .catch(error => this.setState({
+      error
+    }));
   }
 
    componentDidMount(){
     const {searchTerm} = this.state;
+    this.setState(
+      {
+        searchKey: searchTerm
+      }
+    )
     this.fetchSearchTopStories(searchTerm);
   } 
 
@@ -108,10 +132,13 @@ class App extends Component {
 
   
    onDismiss(id){
-     const updatedHits = this.state.result.hits.filter(item => item.objectID !== id);
+     const {searchKey, results} = this.state;
+     const {hits,page} = results[searchKey];
+     const updatedHits = hits.filter(item => item.objectID !== id);
      this.setState({
       // result: object.assign({},this.state.result, {hits : updatedHits}) this works but we prefer the spread opertor
-      result: {...this.state.result, hits : updatedHits}
+      results: {...results,[searchKey] : {hits : updatedHits,page}
+      }
      })
    }
 
@@ -125,25 +152,38 @@ class App extends Component {
     const {
       searchTerm,
       //list, //not using dummy data list anymore
-      result,
+      results,
+      searchKey,
+      error,
       helloWorld
     } = this.state;
-    const page = (result && result.page) || 0;
+    const page = (results && 
+      results[searchKey] && 
+      results[searchKey].page) || 0;
+    
+    const list = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].hits
+    ) || [];
   /*   if(!result){
       return null;
     } 
  */
+    if(error){
+      return <p>Something went wrong</p>
+    }
     return (
       <div className="page">
         <TextoRender value={helloWorld}/>
         <div className="interactions">
            <Search value={searchTerm} onChange={this.onSearchChange} onSubmit={this.onSearchSubmit}>Search</Search>
-            <Button onClick={() => this.fetchSearchTopStories(searchTerm, page + 1)}>More</Button>
+            <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>More</Button>
         </div>
         {  //same as if not result display search but wait for the api to load the records
           //result ? <Table list={result.hits} pattern={searchTerm} onDismiss={this.onDismiss}/>  we are not filtering from the client side anymore
-          result ? <Table list={result.hits}  onDismiss={this.onDismiss}/>
-            : null
+          <Table list={list}  onDismiss={this.onDismiss}/>
+            
         }
       </div>
     );
