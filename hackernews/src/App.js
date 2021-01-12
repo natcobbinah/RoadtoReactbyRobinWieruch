@@ -1,6 +1,9 @@
 import React, {Component} from 'react';
 import './App.css';
 import axios from 'axios';
+import {
+  DEFAULT_QUERY,DEFAULT_HPP,PATH_BASE,PATH_SEARCH,PARAM_SEARCH,PARAM_PAGE,PARAM_HPP
+  } from '../src/constants';
 
 /*   const list = [
    {
@@ -28,20 +31,21 @@ import axios from 'axios';
 //   }
 // } 
 
-const DEFAULT_QUERY = 'redux';
+/* const DEFAULT_QUERY = 'redux'; now stored in a default folder structured and exported
 const DEFAULT_HPP = '100';
 
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query='; 
 const PARAM_PAGE = 'page=';
-const PARAM_HPP = 'hitsPerPage=';
+const PARAM_HPP = 'hitsPerPage='; */
 
 /* const isSearched = searchTerm => item => 
           item.title.toLowerCase().includes(searchTerm.toLowerCase());  
           we are not filtering the records on the client side anymore*/
 
 class App extends Component {
+  _isMounted = false;
 
   constructor(props){
     super(props);
@@ -115,13 +119,15 @@ class App extends Component {
 
     //using axios library instead
     axios(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
-    .then(result => this.searchTopStories(result.data))
-    .catch(error => this.setState({
+    .then(result => this._isMounted && this.searchTopStories(result.data))
+    .catch(error => this._isMounted && this.setState({
       error
     }))
   }
 
    componentDidMount(){
+    this._isMounted = true;
+
     const {searchTerm} = this.state;
     this.setState(
       {
@@ -130,6 +136,10 @@ class App extends Component {
     )
     this.fetchSearchTopStories(searchTerm);
   } 
+
+  componentWillUnmount(){
+    this._isMounted = false;
+  }
 
   // onDismiss(id){
   //   const updateList = this.state.list.filter(item => item.objectID !== id);
@@ -200,11 +210,11 @@ class App extends Component {
     );
   }
 }
-
 const TextoRender = ({value}) => 
   <div>
       <p>{value}</p>
   </div>
+
 
 const Search = ({value,onChange,onSubmit,children}) => 
 <form onSubmit={onSubmit}>
@@ -238,3 +248,5 @@ const Button = ({onClick, className='',children}) =>
 <button onClick = {onClick} className={className} type="button">{children}</button>
 
 export default App;
+
+export {Button,Search,Table};
