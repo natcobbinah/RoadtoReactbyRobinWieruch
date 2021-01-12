@@ -243,10 +243,26 @@ const Table = ( {list,onDismiss}) =>
       </div>
 )}
 </div>
+Table.propTypes = {
+  list: PropTypes.arrayOf(
+    PropTypes.shape({
+      objectID: PropTypes.string.isRequired,
+      author: PropTypes.string,
+      url: PropTypes.string,
+      num_comments: PropTypes.number,
+      points: PropTypes.number,
+    })
+  ).isRequired,
+    onDismiss: PropTypes.func.isRequired,
+};
 
 const Button = ({onClick, className='',children}) =>
 <button onClick = {onClick} className={className} type="button">{children}</button>
-
+Button.PropTypes = {
+  onClick : PropTypes.func.isRequired,
+  className: PropTypes.string,
+  children: PropTypes.node.isRequired
+}
 export default App;
 
 export {Button,Search,Table};

@@ -6,6 +6,7 @@ import renderer from 'react-test-renderer';
 import Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import Enzyme, { shallow } from 'enzyme';
+import PropTypes from 'prop-types';
 
 /* test('renders learn react link', () => {
   render(<App />);
@@ -96,7 +97,6 @@ describe('Table', () => {
     const element = shallow(
       <Table {...props}/>
     );
-
     expect(element.find('.table-row').length).toBe(2);
   });
 })
