@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import './App.css';
+import axios from 'axios';
 
 /*   const list = [
    {
@@ -105,12 +106,19 @@ class App extends Component {
   } 
 
   fetchSearchTopStories(searchTerm, page = 0){
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
+   /*  fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
     .then(response => response.json())
     .then(result => this.searchTopStories(result))
     .catch(error => this.setState({
       error
-    }));
+    })); */
+
+    //using axios library instead
+    axios(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
+    .then(result => this.searchTopStories(result.data))
+    .catch(error => this.setState({
+      error
+    }))
   }
 
    componentDidMount(){
@@ -170,9 +178,9 @@ class App extends Component {
       return null;
     } 
  */
-    if(error){
+   /*  if(error){
       return <p>Something went wrong</p>
-    }
+    } */
     return (
       <div className="page">
         <TextoRender value={helloWorld}/>
@@ -182,7 +190,10 @@ class App extends Component {
         </div>
         {  //same as if not result display search but wait for the api to load the records
           //result ? <Table list={result.hits} pattern={searchTerm} onDismiss={this.onDismiss}/>  we are not filtering from the client side anymore
-          <Table list={list}  onDismiss={this.onDismiss}/>
+          error ? <div className="interactions">
+            <p>Something went wrong</p>
+          </div>
+          : <Table list={list}  onDismiss={this.onDismiss}/>
             
         }
       </div>
