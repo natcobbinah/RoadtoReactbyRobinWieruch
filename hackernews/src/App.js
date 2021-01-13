@@ -4,6 +4,7 @@ import axios from 'axios';
 import {
   DEFAULT_QUERY,DEFAULT_HPP,PATH_BASE,PATH_SEARCH,PARAM_SEARCH,PARAM_PAGE,PARAM_HPP
   } from '../src/constants';
+  import PropTypes from 'prop-types';
 
 /*   const list = [
    {
@@ -56,7 +57,8 @@ class App extends Component {
       //list, //not using dummy data list anymore
       searchTerm: DEFAULT_QUERY,
       helloWorld: 'Welcome to the Road to learn React',
-      error: null
+      error: null,
+      isLoading:false,
     };
 
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
@@ -105,7 +107,8 @@ class App extends Component {
     this.setState({
         results:{
          ...results, [searchKey]: {hits: updateHits,page}
-        }
+        },
+        isLoading:false
     });
   } 
 
@@ -118,6 +121,7 @@ class App extends Component {
     })); */
 
     //using axios library instead
+    this.setState({isLoading: true});
     axios(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
     .then(result => this._isMounted && this.searchTopStories(result.data))
     .catch(error => this._isMounted && this.setState({
@@ -173,7 +177,8 @@ class App extends Component {
       results,
       searchKey,
       error,
-      helloWorld
+      helloWorld,
+      isLoading
     } = this.state;
     const page = (results && 
       results[searchKey] && 
@@ -196,7 +201,12 @@ class App extends Component {
         <TextoRender value={helloWorld}/>
         <div className="interactions">
            <Search value={searchTerm} onChange={this.onSearchChange} onSubmit={this.onSearchSubmit}>Search</Search>
-            <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>More</Button>
+            <ButtonWithLoading
+              isLoading = {isLoading}
+              onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
+                More
+            </ButtonWithLoading>
+            {/*   <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>More</Button> */}
         </div>
         {  //same as if not result display search but wait for the api to load the records
           //result ? <Table list={result.hits} pattern={searchTerm} onDismiss={this.onDismiss}/>  we are not filtering from the client side anymore
@@ -216,11 +226,28 @@ const TextoRender = ({value}) =>
   </div>
 
 
-const Search = ({value,onChange,onSubmit,children}) => 
-<form onSubmit={onSubmit}>
+//const Search = ({value,onChange,onSubmit,children}) => 
+class Search extends Component{
+  componentDidMount(){
+    if(this.input){
+      this.input.focus();
+    }
+  }
+
+  render(){
+    const {value,onChange,onSubmit,children} = this.props;
+    return(
+      <form onSubmit={onSubmit}>
       {children} <input type="text"  value={value} onChange={onChange} />
+      ref = {(node) => {this.input = node; }}
       <button type="submit">{children}</button>
-</form>
+     </form>
+    );
+  }
+}
+
+const Loading = () => 
+      <div>Loading...</div>
 
 //search on the client side is no longer used so we omit the pattern props
 //const Table = ( {list,pattern,onDismiss}) =>
@@ -258,11 +285,32 @@ Table.propTypes = {
 
 const Button = ({onClick, className='',children}) =>
 <button onClick = {onClick} className={className} type="button">{children}</button>
-Button.PropTypes = {
+Button.propTypes = {
   onClick : PropTypes.func.isRequired,
   className: PropTypes.string,
   children: PropTypes.node.isRequired
 }
+
+/* function withFoo(Component){
+  return function(props){
+    return <Component {...props}/>
+  }
+} */
+
+//ES6
+/* const withFoo = (Component) => (props) =>
+  props.isLoading ?
+  <Loading/> : 
+  <Component {...props}/> */
+
+  //more improved to avoid bugs
+  const withLoading = (Component) => ({isLoading, ...rest}) =>
+    isLoading ?
+      <Loading/> :
+      <Component {...rest}/>
+
+      const ButtonWithLoading = withLoading(Button);
+
 export default App;
 
 export {Button,Search,Table};
