@@ -68,7 +68,6 @@ class App extends Component {
       helloWorld: 'Welcome to the Road to learn React',
       error: null,
       isLoading:false,
-      sortKey: 'NONE',
     };
 
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
@@ -77,11 +76,6 @@ class App extends Component {
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
-    this.onSort = this.onSort.bind(this);
-  }
-
-  onSort(sortKey){
-    this.setState({sortKey});
   }
 
   needsToSearchTopStories(searchTerm){
@@ -106,26 +100,29 @@ class App extends Component {
 
   setSearchTopStories(result){
 
-    const {
-      hits, 
-      page
-    } = result;
-    const{
-      searchKey, results
-    } = this.state;
-
-    const oldHits = page !==0 ? this.state.result.hits : [];
-    const updateHits = [
-      ...oldHits,...hits
-    ]
-
-    this.setState({
-        results:{
+    const {hits, page} = result;
+    this.setState(prevState => {
+      const {searchKey, results} = prevState;
+      const oldHits = results && results[searchKey] ? results[searchKey].hits : [];
+      const updateHits = [ ...oldHits,...hits]
+      return{
+      results:{
          ...results, [searchKey]: {hits: updateHits,page}
         },
         isLoading:false
+      };
     });
-  } 
+  }
+
+   /*  const{
+      searchKey, results
+    } = this.state; */
+
+    // const oldHits = page !==0 ? this.state.result.hits : [];
+    /* const updateHits = [
+      ...oldHits,...hits
+    ] */
+  //} 
 
   fetchSearchTopStories(searchTerm, page = 0){
    /*  fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
@@ -194,7 +191,8 @@ class App extends Component {
       error,
       helloWorld,
       isLoading,
-      sortKey,
+     /*  sortKey,
+      isSortReverse, */
     } = this.state;
     const page = (results && 
       results[searchKey] && 
@@ -229,7 +227,7 @@ class App extends Component {
           error ? <div className="interactions">
             <p>Something went wrong</p>
           </div>
-          : <Table list={list} sortKey = {sortKey} onSort={this.onSort}  onDismiss={this.onDismiss}/>
+          : <Table list={list}  onDismiss={this.onDismiss}/>
             
         }
       </div>
@@ -267,29 +265,51 @@ const Loading = () =>
 
 //search on the client side is no longer used so we omit the pattern props
 //const Table = ( {list,pattern,onDismiss}) =>
-const Table = ( {list,sortKey, onSort, onDismiss}) =>
-<div className="table">
-  <div className="table-header">
-      <span style={{width: '40%'}}>
-        <Sort sortKey= {'TITLE'} onSort={onSort}>Title</Sort>
-      </span>
-      <span style={{width: '30%'}}>
-        <Sort sortKey= {'AUTHOR'} onSort={onSort}>Author</Sort>
-      </span>
-      <span style={{width: '10%'}}>
-        <Sort sortKey= {'COMMENTS'} onSort={onSort}>Comments</Sort>
-      </span>
-      <span style={{width: '10%'}}>
-        <Sort sortKey= {'POINTS'} onSort={onSort}>Points</Sort>
-      </span>
-      <span style={{width: '10%'}}>
-        <Sort sortKey= {'POINTS'} >Archive</Sort>
-      </span>
-  </div>
-{/* //isSearched is not longer used because we are not filtering on the client side anymore
-//{list.map(item =>  */}
 
-{SORTS[sortKey](list).map(item => 
+
+/* const Table = ( {list,sortKey,isSortReverse, onSort, onDismiss}) =>{
+  const sortedList = SORTS[sortKey](list);
+  const reverseSortedList = isSortReverse ? sortedList.reverse() : sortedList; 
+  changed from functional state component to class component */
+
+  class Table extends Component {
+    constructor(props){
+      super(props);
+
+      this.state ={
+        sortKey: 'NONE',
+        isSortRevere: false,
+      };
+      this.onSort = this.onSort.bind(this);
+    }
+
+    onSort(sortKey){
+      const isSortReverse = this.state.sortKey === sortKey && !this.state.isSortReverse;
+      this.setState({sortKey,isSortReverse});
+    }
+
+    render(){                 
+      const {list, onDismiss} = this.props;
+      const {sortKey,isSortReverse} = this.state;
+      const sortedList = SORTS[sortKey](list);
+      const reverseSortedList = isSortReverse ? sortedList.reverse() : sortedList; 
+  return(
+    <div className="table">
+    <div className="table-header">
+        <span style={{width: '40%'}}>
+          <Sort sortKey= {'TITLE'} onSort={this.onSort} activeSortKey={sortKey}>Title</Sort>
+        </span>
+        <span style={{width: '30%'}}>
+          <Sort sortKey= {'AUTHOR'} onSort={this.onSort}  activeSortKey={sortKey}>Author</Sort>
+        </span>
+        <span style={{width: '10%'}}>
+          <Sort sortKey= {'COMMENTS'} onSort={this.onSort}  activeSortKey={sortKey}>Comments</Sort>
+        </span>
+        <span style={{width: '10%'}}>
+          <Sort sortKey= {'POINTS'} onSort={this.onSort}  activeSortKey={sortKey}>Points</Sort>
+        </span>
+    </div>
+    {reverseSortedList.map(item => 
       <div key={item.objectID} className="table-row">
           <span  style={{ width: '40%' }}><a href={item.url}>{item.title}</a></span>
           <span  style={{ width: '30%' }}>{item.author}</span>
@@ -301,8 +321,16 @@ const Table = ( {list,sortKey, onSort, onDismiss}) =>
            </Button>
           </span>
       </div>
-)}
-</div>
+    )}
+    </div>
+  )}
+    }
+
+
+/* isSearched is not longer used because we are not filtering on the client side anymore
+{list.map(item =>   */
+
+
 Table.propTypes = {
   list: PropTypes.arrayOf(
     PropTypes.shape({
@@ -344,10 +372,19 @@ Button.propTypes = {
 
       const ButtonWithLoading = withLoading(Button);
 
-  const Sort = ({sortKey,onSort, children}) =>
-    <Button onClick = {() => onSort(sortKey)} className="button-inline">
+  const Sort = ({sortKey,activeSortkey, onSort, children}) => {
+    const sortClass = ['button-inline'];
+
+    if(sortKey === activeSortkey){
+      sortClass.push('button-active');
+    }
+
+    return(
+      <Button onClick = {() => onSort(sortKey)} className={sortClass.join('')}>
       {children}
     </Button>
+    )
+  }
 
 export default App;
 
