@@ -5,6 +5,7 @@ import {
   DEFAULT_QUERY,DEFAULT_HPP,PATH_BASE,PATH_SEARCH,PARAM_SEARCH,PARAM_PAGE,PARAM_HPP
   } from '../src/constants';
   import PropTypes from 'prop-types';
+  import {sortBy} from 'lodash';
 
 /*   const list = [
    {
@@ -45,6 +46,14 @@ const PARAM_HPP = 'hitsPerPage='; */
           item.title.toLowerCase().includes(searchTerm.toLowerCase());  
           we are not filtering the records on the client side anymore*/
 
+const SORTS = {
+  NONE: list => list,
+  TITLE: list => sortBy(list, 'title'),
+  AUTHOR: list => sortBy(list, 'author'),
+  COMMENTS: list => sortBy(list, 'num_comments').reverse(),
+  POINTS: list => sortBy(list, 'points').reverse(),
+}
+
 class App extends Component {
   _isMounted = false;
 
@@ -59,6 +68,7 @@ class App extends Component {
       helloWorld: 'Welcome to the Road to learn React',
       error: null,
       isLoading:false,
+      sortKey: 'NONE',
     };
 
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
@@ -67,6 +77,11 @@ class App extends Component {
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
+    this.onSort = this.onSort.bind(this);
+  }
+
+  onSort(sortKey){
+    this.setState({sortKey});
   }
 
   needsToSearchTopStories(searchTerm){
@@ -178,7 +193,8 @@ class App extends Component {
       searchKey,
       error,
       helloWorld,
-      isLoading
+      isLoading,
+      sortKey,
     } = this.state;
     const page = (results && 
       results[searchKey] && 
@@ -213,7 +229,7 @@ class App extends Component {
           error ? <div className="interactions">
             <p>Something went wrong</p>
           </div>
-          : <Table list={list}  onDismiss={this.onDismiss}/>
+          : <Table list={list} sortKey = {sortKey} onSort={this.onSort}  onDismiss={this.onDismiss}/>
             
         }
       </div>
@@ -251,12 +267,29 @@ const Loading = () =>
 
 //search on the client side is no longer used so we omit the pattern props
 //const Table = ( {list,pattern,onDismiss}) =>
-const Table = ( {list,onDismiss}) =>
+const Table = ( {list,sortKey, onSort, onDismiss}) =>
 <div className="table">
+  <div className="table-header">
+      <span style={{width: '40%'}}>
+        <Sort sortKey= {'TITLE'} onSort={onSort}>Title</Sort>
+      </span>
+      <span style={{width: '30%'}}>
+        <Sort sortKey= {'AUTHOR'} onSort={onSort}>Author</Sort>
+      </span>
+      <span style={{width: '10%'}}>
+        <Sort sortKey= {'COMMENTS'} onSort={onSort}>Comments</Sort>
+      </span>
+      <span style={{width: '10%'}}>
+        <Sort sortKey= {'POINTS'} onSort={onSort}>Points</Sort>
+      </span>
+      <span style={{width: '10%'}}>
+        <Sort sortKey= {'POINTS'} >Archive</Sort>
+      </span>
+  </div>
 {/* //isSearched is not longer used because we are not filtering on the client side anymore
 //{list.map(item =>  */}
 
-{list.map(item => 
+{SORTS[sortKey](list).map(item => 
       <div key={item.objectID} className="table-row">
           <span  style={{ width: '40%' }}><a href={item.url}>{item.title}</a></span>
           <span  style={{ width: '30%' }}>{item.author}</span>
@@ -310,6 +343,11 @@ Button.propTypes = {
       <Component {...rest}/>
 
       const ButtonWithLoading = withLoading(Button);
+
+  const Sort = ({sortKey,onSort, children}) =>
+    <Button onClick = {() => onSort(sortKey)} className="button-inline">
+      {children}
+    </Button>
 
 export default App;
 
